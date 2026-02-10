@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Breakout</title>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.1/lib/p5.min.js"></script>
+    <style>
+      html, body { margin: 0; padding: 0; background: #111; }
+      canvas { display: block; margin: 0 auto; }
+    </style>
+  </head>
+  <body>
+    <script>
+      let ballX, ballY;
+      let ballSize = 15;
+      let ballSpeedX = 5;
+      let ballSpeedY = -5;
+
+      let paddleX;
+      let paddleWidth = 100;
+      let paddleHeight = 15;
+      let paddleSpeed = 8;
+
+      let bricks = [];
+      let rows = 4;
+      let cols = 8;
+      let brickWidth = 70;
+      let brickHeight = 20;
+      let brickGap = 5;
+
+      let score = 0;
+      let lives = 5;
+      let mode = "play";
+
+      function setup() {
+        createCanvas(600, 400);
+        restartGame();
+      }
+
+      function resetBallAndPaddle() {
+        ballX = width / 2;
+        ballY = height / 2;
+        ballSpeedX = random([-5, -4, 4, 5]);
+        ballSpeedY = -5;
+        paddleX = width / 2 - paddleWidth / 2;
+      }
+
+      function createBricks() {
+        bricks = [];
+        let gridWidth = cols * brickWidth + (cols - 1) * brickGap;
+        let startX = width / 2 - gridWidth / 2;
+        let startY = height / 2 - 120;
+
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            bricks.push({
+              x: startX + c * (brickWidth + brickGap),
+              y: startY + r * (brickHeight + brickGap),
+              alive: true
+            });
+          }
+        }
+      }
+
+      function restartGame() {
+        score = 0;
+        lives = 5;
+        mode = "play";
+        createBricks();
+        resetBallAndPaddle();
+      }
+
+      function keyPressed() {
+        if ((mode === "gameover" || mode === "win") && (key === "r" || key === "R")) {
+          restartGame();
+        }
+      }
+
+      function allBricksBroken() {
+        for (let b of bricks) {
+          if (b.alive) return false;
+        }
+        return true;
+      }
+
+      function drawTopText() {
+        fill(255);
+        textAlign(CENTER, TOP);
+        textSize(14);
+        text("Created by Daniel Cejka from the NEXORA team", width / 2, 2);
+
+        textAlign(LEFT, TOP);
+        textSize(18);
+        text("Score: " + score, 5, 2);
+        text("Lives: " + lives, 5, 22);
+      }
+
+      function draw() {
+        background(20);
+        drawTopText();
+
+        if (mode === "gameover") {
+          fill(255);
+          textAlign(CENTER, CENTER);
+          textSize(45);
+          text("GAME OVER", width / 2, height / 2 - 20);
+          textSize(20);
+          text("Press R to Restart", width / 2, height / 2 + 25);
+          return;
+        }
+
+        if (mode === "win") {
+          fill(255);
+          textAlign(CENTER, CENTER);
+          textSize(45);
+          text("YOU WIN!", width / 2, height / 2 - 20);
+          textSize(20);
+          text("Press R to Restart", width / 2, height / 2 + 25);
+          return;
+        }
+
+        if (keyIsDown(65)) paddleX -= paddleSpeed;
+        if (keyIsDown(68)) paddleX += paddleSpeed;
+        paddleX = constrain(paddleX, 0, width - paddleWidth);
+
+        fill(255);
+        rect(paddleX, height - 30, paddleWidth, paddleHeight);
+
+        ballX += ballSpeedX;
+        ballY += ballSpeedY;
+
+        if (ballX - ballSize / 2 < 0 || ballX + ballSize / 2 > width) {
+          ballSpeedX *= -1;
+        }
+        if (ballY - ballSize / 2 < 0) {
+          ballSpeedY *= -1;
+        }
+
+        if (
+          ballY + ballSize / 2 > height - 30 &&
+          ballY + ballSize / 2 < height - 30 + paddleHeight &&
+          ballX > paddleX &&
+          ballX < paddleX + paddleWidth &&
+          ballSpeedY > 0
+        ) {
+          ballSpeedY *= -1;
+          let hitPos = ballX - (paddleX + paddleWidth / 2);
+          ballSpeedX = hitPos * 0.12;
+        }
+
+        for (let b of bricks) {
+          if (!b.alive) continue;
+
+          if (
+            ballX > b.x &&
+            ballX < b.x + brickWidth &&
+            ballY > b.y &&
+            ballY < b.y + brickHeight
+          ) {
+            b.alive = false;
+            ballSpeedY *= -1;
+            score++;
+            break;
+          }
+        }
+
+        fill("red");
+        for (let b of bricks) {
+          if (b.alive) rect(b.x, b.y, brickWidth, brickHeight);
+        }
+
+        fill(255);
+        ellipse(ballX, ballY, ballSize);
+
+        if (allBricksBroken()) {
+          mode = "win";
+          return;
+        }
+
+        if (ballY - ballSize / 2 > height) {
+          lives--;
+          if (lives <= 0) {
+            mode = "gameover";
+          } else {
+            resetBallAndPaddle();
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
